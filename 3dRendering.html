@@ -1,0 +1,173 @@
+<canvas id="game" style="border:1px solid black;" width="800" height="600"></canvas>
+
+<script>
+
+window.onload = function()
+{
+	var fps = 60;
+	document.addEventListener("keydown", keydown);
+	document.addEventListener("keyup", keyup);
+	setInterval(gameLoop, 1000/fps);
+}
+
+var canvas = document.getElementById("game");
+var ctx = canvas.getContext("2d");
+var x = 0;
+var y = 0;
+var z = 0;
+var angle = 0;
+var left = false; var right = false; var up = false; var down = false; var strafeL = false; var strafeR = false;
+
+function keydown(evt)
+{
+	switch(evt.keyCode)
+	{
+		case 65: left = true; break;
+		case 87: up = true; break;
+		case 68: right = true; break;
+		case 83: down = true; break;
+		case 69: strafeL = true; break;
+		case 81: strafeR = true; break;
+	}
+}
+function keyup(evt)
+{
+	switch(evt.keyCode)
+	{
+		case 65: left = false; break;
+		case 87: up = false; break;
+		case 68: right = false; break;
+		case 83: down = false; break;
+		case 69: strafeL = false; break;
+		case 81: strafeR = false; break;
+	}
+}
+
+function gameLoop()
+{
+	gameLogic();
+	paintScreen();
+}
+
+function gameLogic()
+{
+	var turnSpeed = .03;
+	var walkSpeed = 3;
+
+	if (left)
+	{ 
+		angle -= turnSpeed;
+	}
+	if (up) 
+	{ 
+		x += Math.sin(angle)*walkSpeed;
+		z += Math.cos(angle)*walkSpeed;
+	}
+	if (right)
+	{ 
+		angle += turnSpeed;
+	}
+	if (down) 
+	{ 
+		x -= Math.sin(angle)*walkSpeed;
+		z -= Math.cos(angle)*walkSpeed;
+	}
+	if (strafeL)
+	{
+		x += Math.cos(angle)*walkSpeed;
+		z += Math.sin(angle)*walkSpeed;
+	}
+	if (strafeR)
+	{
+		x -= Math.cos(angle)*walkSpeed;
+		z -= Math.sin(angle)*walkSpeed;
+	}
+}
+
+function paintScreen()
+{
+	ctx.fillStyle = "#696";
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+	ctx.fillStyle = "#000";
+	//ctx.fillRect(x, y, 50, 50);
+	
+	//origin is the top, left, back corner of the cube
+	for (var i = 1; i <= 6; i++)
+	{
+		drawPrism(-70, -50, 100*i, 20, 100, 20);
+		drawPrism(70, -50, 100*i, 20, 100, 20);
+	}
+}
+
+
+
+function draw3dLine(x1, y1, z1, x2, y2, z2)
+{
+	var centerOfScreenX = 400;
+	var centerOfScreenY = 300;
+	
+	//diffrence between our points and the player position
+	var x1Diff = x1 - x;
+	var y1Diff = y1 - y;
+	var z1Diff = z1 - z;
+	var x2Diff = x2 - x;
+	var y2Diff = y2 - y;
+	var z2Diff = z2 - z;
+	
+	//rotation matrix
+	//only a 2d matrix
+	var translatedX1 = x1Diff * Math.cos(-angle) + z1Diff * Math.sin(-angle);
+	var translatedZ1 = z1Diff * Math.cos(-angle) - x1Diff * Math.sin(-angle);
+	var translatedX2 = x2Diff * Math.cos(-angle) + z2Diff * Math.sin(-angle);
+	var translatedZ2 = z2Diff * Math.cos(-angle) - x2Diff * Math.sin(-angle);
+	
+	var screenDistance = 400;
+	
+	//rotate around player instead of origin + move camera to center of screen
+	dispX1 = (translatedX1 / translatedZ1) * screenDistance + centerOfScreenX;
+	dispY1 = (y1Diff / translatedZ1) * screenDistance + centerOfScreenY;
+	dispX2 = (translatedX2 / translatedZ2) * screenDistance + centerOfScreenX;
+	dispY2 = (y2Diff / translatedZ2) * screenDistance + centerOfScreenY;
+	/*dispX1 = translatedX1 + centerOfScreenX;
+	dispY1 = translatedZ1 + centerOfScreenY;
+	dispX2 = translatedX2 + centerOfScreenX;
+	dispY2 = translatedZ2 + centerOfScreenY;*/
+	
+	//ctx.fillRect(390, 290, 20, 20);
+	
+	if (translatedZ1 < 0 || translatedZ2 < 0)
+	{
+		return;
+	}
+	
+	ctxDrawLine(dispX1, dispY1, dispX2, dispY2);
+}
+
+function ctxDrawLine(x1, y1, x2, y2)
+{
+	ctx.beginPath();
+	ctx.moveTo(x1, y1);
+	ctx.lineTo(x2, y2);
+	ctx.stroke();
+}
+
+function drawPrism(prX, prY, prZ, prW, prH, prL)
+{
+	draw3dLine(prX, prY, prZ, prX, prY, prZ+prL);
+	draw3dLine(prX, prY, prZ, prX, prY+prH, prZ);
+	draw3dLine(prX, prY+prH, prZ, prX, prY+prH, prZ+prL);
+	draw3dLine(prX, prY, prZ+prL, prX, prY+prH, prZ+prL);
+	
+	draw3dLine(prX+prW, prY, prZ, prX+prW, prY, prZ+prL);
+	draw3dLine(prX+prW, prY, prZ, prX+prW, prY+prH, prZ);
+	draw3dLine(prX+prW, prY+prH, prZ, prX+prW, prY+prH, prZ+prL);
+	draw3dLine(prX+prW, prY, prZ+prL, prX+prW, prY+prH, prZ+prL);
+	
+	draw3dLine(prX, prY, prZ, prX+prW, prY, prZ);
+	draw3dLine(prX, prY+prH, prZ, prX+prW, prY+prH, prZ);
+	draw3dLine(prX, prY, prZ+prL, prX+prW, prY, prZ+prL);
+	draw3dLine(prX, prY+prH, prZ+prL, prX+prW, prY+prH, prZ+prL);
+}
+
+</script>
